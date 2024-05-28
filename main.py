@@ -8,6 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer, QRect
 from PyQt5 import uic
+from PyQt5.QtGui import QPixmap
 from datetime import datetime
 
  
@@ -27,6 +28,11 @@ class WindowClass(QMainWindow, form_class):
         
         self.class_indices = ['초반', '중반', '후반']
         self.model = load_model('model/model_1.h5',compile = False)
+
+        self.middle_flag = 0
+        self.final_flag = 0
+    
+
         self.initUI()
 
 
@@ -41,26 +47,32 @@ class WindowClass(QMainWindow, form_class):
         self.stop_button.setDisabled(True)
         self.stop_button.clicked.connect(self.stop_recording)
         
-        self.figure, self.ax = plt.subplots(figsize = (10,10))
-        self.canvas = FigureCanvas(self.figure)
-        self.graph_verticalLayout.addWidget(self.canvas)
-
         self.elapsed_timer = QTimer(self)
         self.elapsed_timer.timeout.connect(self.update_elapsed_time)
 
+
+        self.section = '초반'
+        self.start_time_str = datetime.now().strftime('%H:%M:%S')
+        self.middle_time_str = datetime.now().strftime('%H:%M:%S')
+        self.end_time_str = datetime.now().strftime('%H:%M:%S')
         self.show()
 
     def update_plot(self, data):
-        self.ax.clear()
+
+        
+        self.figure = plt.figure(figsize=(10,10))
+        librosa.display.specshow(data, sr=32000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
         plt.gca().xaxis.set_visible(False)
         plt.gca().yaxis.set_visible(False)
         plt.axis('off')
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        img = librosa.display.specshow(data, sr=32000, x_axis='time', y_axis='linear', ax=self.ax, cmap='plasma',vmin = -5, vmax = 5)
-        self.canvas.draw()
         self.figure.savefig('stft_image.png')
+        plt.close()
         self.predict_cnn('stft_image.png')
 
+        pixmap = QPixmap('stft_image.png')
+        self.graph_verticalLayout.setPixmap(pixmap)
+        self.graph_verticalLayout.setScaledContents(True)
 
     def update_time(self):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -68,14 +80,24 @@ class WindowClass(QMainWindow, form_class):
 
 
     def update_elapsed_time(self):
-        elapsed_time = datetime.now() - self.start_time
-        elapsed_seconds = elapsed_time.total_seconds()
+        self.elapsed_time = datetime.now() - self.start_time
+        elapsed_seconds = self.elapsed_time.total_seconds()
         hours, remainder = divmod(elapsed_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
-        self.elapsed_time_label.setText(f'{int(hours):02}:{int(minutes):02}:{int(seconds):02}')
+        self.elapsed_time_label.setText(f'{int(minutes):02}:{int(seconds):02}')
+
+        if self.section == '중반' and elapsed_seconds >= 110 and self.middle_flag == 0:
+            self.middle_time_str = self.elapsed_seconds
+            self.current_state_label_2.setText(f'{self.middle_time}에 중반 구간에 돌입했습니다.')
+
+        if self.section == '후반' and elapsed_seconds >= 180 and self.middle_flag == 0:
+            self.end_time_str = self.elapsed_seconds
+            self.current_state_label_3.setText(f'{self.final_time}에 후반 구간에 돌입했습니다.')
+
+        
 
     def start_recording(self):
-        self.start_time = datetime.now()
+        self.start_time= datetime.now()
         self.elapsed_timer.start(1000)
         self.audio_thread = AudioThread()
         self.audio_thread.audio_signal.connect(self.update_plot)
@@ -83,12 +105,17 @@ class WindowClass(QMainWindow, form_class):
         self.start_button.setDisabled(True)
         self.stop_button.setDisabled(False)
 
+        self.middle_flag = 0
+        self.final_flag = 0
+
 
     def stop_recording(self):
+        self.end_time_str = datetime.now().strftime('%H:%M:%S')
         self.audio_thread.stop()
         self.start_button.setDisabled(False)
         self.stop_button.setDisabled(True)
         self.elapsed_timer.stop()
+        self.final_result.setText(f'{self.start_time_str}부터 {self.end_time_str} 까지 {self.elapsed_time.total_seconds()}초동안 가공했습니다.\n{self.middle_time_str}초에 중반 구간에 돌입했고 {self.end_time}초에 후반 구간에 돌입했습니다.')
 
     def predict_cnn(self,image_path):
         
@@ -99,7 +126,9 @@ class WindowClass(QMainWindow, form_class):
         
         img = img.reshape(1,500,500,3)
         prediction = self.model.predict(img)
-        self.current_state_label.setText(f'{self.class_indices[np.argmax(prediction)]} 구간 가공 중입니다...')
+        self.section = self.class_indices[np.argmax(prediction)]
+        self.current_state_label.setText(f'{self.section} 구간 가공 중입니다...')
+
 
 
 class AudioThread(QThread):
@@ -113,6 +142,7 @@ class AudioThread(QThread):
         sampling_rate = 32000
         chunk_size = 1024
         seconds = 5
+        num_chunks_per_second = int(sampling_rate / chunk_size)
         num_chunks = int(sampling_rate / chunk_size * seconds)
         audio_buffer = np.zeros(sampling_rate * seconds)
 
@@ -124,7 +154,7 @@ class AudioThread(QThread):
                         frames_per_buffer=chunk_size)
 
         while self.running:
-            for i in range(num_chunks):
+            for i in range(num_chunks_per_second):
                 if not self.running:
                     break
                 data = np.frombuffer(stream.read(chunk_size), dtype=np.int16).astype(np.float32)

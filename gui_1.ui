@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>813</width>
-    <height>699</height>
+    <height>764</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,17 +51,6 @@
     <string>종료</string>
    </property>
   </widget>
-  <widget class="QWidget" name="verticalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>100</y>
-     <width>751</width>
-     <height>461</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="graph_verticalLayout"/>
-  </widget>
   <widget class="QLabel" name="current_time_label">
    <property name="geometry">
     <rect>
@@ -84,9 +73,9 @@
   <widget class="QLabel" name="final_result">
    <property name="geometry">
     <rect>
-     <x>300</x>
-     <y>570</y>
-     <width>491</width>
+     <x>160</x>
+     <y>680</y>
+     <width>641</width>
      <height>61</height>
     </rect>
    </property>
@@ -136,14 +125,14 @@
     </font>
    </property>
    <property name="text">
-    <string>00:00:00</string>
+    <string>00:00</string>
    </property>
   </widget>
   <widget class="QLabel" name="final_result_2">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>570</y>
+     <x>20</x>
+     <y>680</y>
      <width>141</width>
      <height>61</height>
     </rect>
@@ -194,6 +183,57 @@
    </property>
    <property name="text">
     <string>xx 구간 가공 중입니다..</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="current_state_label_2">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>90</y>
+     <width>221</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Malgun Gothic</family>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="current_state_label_3">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>110</y>
+     <width>221</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Malgun Gothic</family>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="graph_verticalLayout">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>130</y>
+     <width>500</width>
+     <height>500</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>
