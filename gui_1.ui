@@ -86,8 +86,7 @@
     </font>
    </property>
    <property name="text">
-    <string>가공 시간: 0월 0일 00시 00분 00초 ~ 0월 0일 00시 00분 00초
-0분 0초간의 공정에서 0분 0초에 구멍이 뚫렸습니다</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="current_time_label_2">
@@ -226,8 +225,8 @@
   <widget class="QLabel" name="graph_verticalLayout">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>130</y>
+     <x>130</x>
+     <y>170</y>
      <width>500</width>
      <height>500</height>
     </rect>

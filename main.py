@@ -31,7 +31,7 @@ class WindowClass(QMainWindow, form_class):
 
         self.middle_flag = 0
         self.final_flag = 0
-    
+
 
         self.initUI()
 
@@ -52,15 +52,17 @@ class WindowClass(QMainWindow, form_class):
 
 
         self.section = '초반'
-        self.start_time_str = datetime.now().strftime('%H:%M:%S')
-        self.middle_time_str = datetime.now().strftime('%H:%M:%S')
-        self.end_time_str = datetime.now().strftime('%H:%M:%S')
+        self.start_time = datetime.now()
+        self.middle_time = datetime.now()
+        self.end_time = datetime.now()
         self.show()
 
     def update_plot(self, data):
 
         self.figure = plt.figure(figsize=(10,10))
         magnitude = np.abs(data)
+        print(np.mean(magnitude))
+        print(np.mean(data))
         librosa.display.specshow(librosa.amplitude_to_db(magnitude, ref = 1.0), sr=48000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
         plt.gca().xaxis.set_visible(False)
         plt.gca().yaxis.set_visible(False)
@@ -87,12 +89,14 @@ class WindowClass(QMainWindow, form_class):
         self.elapsed_time_label.setText(f'{int(minutes):02}:{int(seconds):02}')
 
         if self.section == '중반' and elapsed_seconds >= 110 and self.middle_flag == 0:
-            self.middle_time_str = self.elapsed_seconds
-            self.current_state_label_2.setText(f'{self.middle_time}에 중반 구간에 돌입했습니다.')
+            self.middle_flag = 1
+            self.middle_time = self.elapsed_seconds
+            self.current_state_label_2.setText(f'{self.middle_time}초에 중반 구간에 돌입했습니다.')
 
-        if self.section == '후반' and elapsed_seconds >= 180 and self.middle_flag == 0:
-            self.end_time_str = self.elapsed_seconds
-            self.current_state_label_3.setText(f'{self.final_time}에 후반 구간에 돌입했습니다.')
+        if self.section == '후반' and elapsed_seconds >= 180 and self.final_flag == 0:
+            self.final_flag = 1
+            self.end_time = self.elapsed_seconds
+            self.current_state_label_3.setText(f'{self.end_time}초에 후반 구간에 돌입했습니다.')
 
         
 
@@ -110,12 +114,19 @@ class WindowClass(QMainWindow, form_class):
 
 
     def stop_recording(self):
-        self.end_time_str = datetime.now().strftime('%H:%M:%S')
+        self.end_time = datetime.now()
         self.audio_thread.stop()
         self.start_button.setDisabled(False)
         self.stop_button.setDisabled(True)
         self.elapsed_timer.stop()
-        self.final_result.setText(f'{self.start_time_str}부터 {self.end_time_str} 까지 {self.elapsed_time.total_seconds()}초동안 가공했습니다.\n{self.middle_time_str}초에 중반 구간에 돌입했고 {self.end_time}초에 후반 구간에 돌입했습니다.')
+        start_time_text = self.start_time.strftime('%H:%M:%S')
+        end_time_text = self.end_time.strftime('%H:%M:%S')
+
+        elapsed_seconds = self.elapsed_time.total_seconds()
+        hours, remainder = divmod(elapsed_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        self.final_result.setText(f'{start_time_text} 부터 {end_time_text} 까지 {int(minutes):01}분 {int(seconds):02}초 동안 가공했습니다.')
 
     def predict_cnn(self,image_path):
         
@@ -141,14 +152,13 @@ class AudioThread(QThread):
 
     def run(self):
         sampling_rate = 48000
-        chunk_size = 1000
+        chunk_size = 1024
         seconds = 5
         num_chunks_per_second = int(sampling_rate / chunk_size) # 32
-        num_chunks = int(sampling_rate / chunk_size * seconds)
         audio_buffer = np.zeros(sampling_rate * seconds) # 160,000 
 
         p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paInt16,
+        stream = p.open(format=pyaudio.paFloat32,
                         channels=1,
                         rate=sampling_rate,
                         input=True,
@@ -158,7 +168,7 @@ class AudioThread(QThread):
             for i in range(num_chunks_per_second):
                 if not self.running:
                     break
-                data = np.frombuffer(stream.read(chunk_size), dtype=np.int16).astype(np.float32)
+                data = np.frombuffer(stream.read(chunk_size), dtype=np.float32)
                 audio_buffer = np.roll(audio_buffer, -chunk_size)
                 audio_buffer[-chunk_size:] = data
 
