@@ -4,6 +4,7 @@ import pyaudio
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
+import wave
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer, QRect
@@ -127,6 +128,9 @@ class WindowClass(QMainWindow, form_class):
         minutes, seconds = divmod(remainder, 60)
 
         self.final_result.setText(f'{start_time_text} 부터 {end_time_text} 까지 {int(minutes):01}분 {int(seconds):02}초 동안 가공했습니다.')
+        self.current_state_label.setText('가공이 종료되었습니다.')
+
+        
 
     def predict_cnn(self,image_path):
         
@@ -144,21 +148,26 @@ class WindowClass(QMainWindow, form_class):
 
 class AudioThread(QThread):
 
+    
+    
+
     audio_signal = pyqtSignal(np.ndarray)
     
     def __init__(self):
         super().__init__()
         self.running = True
+        self.frames = []
 
     def run(self):
+        
         sampling_rate = 48000
         chunk_size = 1024
         seconds = 5
         num_chunks_per_second = int(sampling_rate / chunk_size) # 32
         audio_buffer = np.zeros(sampling_rate * seconds) # 160,000 
 
-        p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paFloat32,
+        self.p = pyaudio.PyAudio()
+        stream = self.p.open(format=pyaudio.paInt16,
                         channels=1,
                         rate=sampling_rate,
                         input=True,
@@ -168,9 +177,15 @@ class AudioThread(QThread):
             for i in range(num_chunks_per_second):
                 if not self.running:
                     break
-                data = np.frombuffer(stream.read(chunk_size), dtype=np.float32)
+                data = np.frombuffer(stream.read(chunk_size), dtype=np.int16).astype(np.float32)
+                print(f'data = {data}')
                 audio_buffer = np.roll(audio_buffer, -chunk_size)
                 audio_buffer[-chunk_size:] = data
+
+                self.frames.append(data)
+
+                
+                
 
             if self.running:
                 stft = librosa.stft(audio_buffer, n_fft=2048, hop_length=512, window = 'hamming')
@@ -179,10 +194,17 @@ class AudioThread(QThread):
 
         stream.stop_stream()
         stream.close()
-        p.terminate()
+        self.p.terminate()
 
     def stop(self):
         self.running = False
+        wf = wave.open("test.wav", 'wb')
+        wf.setnchannels(1)
+        wf.setsampwidth(self.p.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(48000)
+        wf.writeframes(b''.join(self.frames))
+        wf.close()
+
         self.wait()
 
 
