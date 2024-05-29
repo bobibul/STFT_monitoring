@@ -62,8 +62,8 @@ class WindowClass(QMainWindow, form_class):
 
         self.figure = plt.figure(figsize=(10,10))
         magnitude = np.abs(data)
+        print(magnitude.shape)
         print(np.mean(magnitude))
-        print(np.mean(data))
         librosa.display.specshow(librosa.amplitude_to_db(magnitude, ref = 1.0), sr=48000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
         plt.gca().xaxis.set_visible(False)
         plt.gca().yaxis.set_visible(False)
@@ -177,10 +177,11 @@ class AudioThread(QThread):
             for i in range(num_chunks_per_second):
                 if not self.running:
                     break
-                data = np.frombuffer(stream.read(chunk_size), dtype=np.int16).astype(np.float32)
-                print(f'data = {data}')
+                data = np.frombuffer(stream.read(chunk_size), dtype=np.int16).astype(np.float32)/32767
+            
                 audio_buffer = np.roll(audio_buffer, -chunk_size)
                 audio_buffer[-chunk_size:] = data
+
 
                 self.frames.append(data)
 
