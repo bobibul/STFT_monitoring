@@ -59,9 +59,9 @@ class WindowClass(QMainWindow, form_class):
 
     def update_plot(self, data):
 
-        
         self.figure = plt.figure(figsize=(10,10))
-        librosa.display.specshow(data, sr=32000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
+        magnitude = np.abs(data)
+        librosa.display.specshow(librosa.amplitude_to_db(magnitude, ref = 1.0), sr=48000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
         plt.gca().xaxis.set_visible(False)
         plt.gca().yaxis.set_visible(False)
         plt.axis('off')
@@ -132,19 +132,20 @@ class WindowClass(QMainWindow, form_class):
 
 
 class AudioThread(QThread):
-    audio_signal = pyqtSignal(np.ndarray)
 
+    audio_signal = pyqtSignal(np.ndarray)
+    
     def __init__(self):
         super().__init__()
         self.running = True
 
     def run(self):
-        sampling_rate = 32000
-        chunk_size = 1024
+        sampling_rate = 48000
+        chunk_size = 1000
         seconds = 5
-        num_chunks_per_second = int(sampling_rate / chunk_size)
+        num_chunks_per_second = int(sampling_rate / chunk_size) # 32
         num_chunks = int(sampling_rate / chunk_size * seconds)
-        audio_buffer = np.zeros(sampling_rate * seconds)
+        audio_buffer = np.zeros(sampling_rate * seconds) # 160,000 
 
         p = pyaudio.PyAudio()
         stream = p.open(format=pyaudio.paInt16,
@@ -162,7 +163,7 @@ class AudioThread(QThread):
                 audio_buffer[-chunk_size:] = data
 
             if self.running:
-                stft = librosa.stft(audio_buffer, n_fft=2048, hop_length=512)
+                stft = librosa.stft(audio_buffer, n_fft=2048, hop_length=512, window = 'hamming')
                 db_stft = librosa.amplitude_to_db(np.abs(stft), ref=np.max)
                 self.audio_signal.emit(db_stft)
 
