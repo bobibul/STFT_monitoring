@@ -64,7 +64,9 @@ class WindowClass(QMainWindow, form_class):
         magnitude = np.abs(data)
         print(magnitude.shape)
         print(np.mean(magnitude))
-        librosa.display.specshow(librosa.amplitude_to_db(magnitude, ref = 1.0), sr=48000, x_axis='time', y_axis='linear', cmap='plasma',vmin = -5, vmax = 5)
+        librosa.display.specshow(librosa.amplitude_to_db(magnitude, ref = 1.0), sr=48000, x_axis='time', y_axis='linear', 
+                                 cmap='plasma',vmin = -5, vmax = 5
+                                )
         plt.gca().xaxis.set_visible(False)
         plt.gca().yaxis.set_visible(False)
         plt.axis('off')
@@ -89,15 +91,14 @@ class WindowClass(QMainWindow, form_class):
         minutes, seconds = divmod(remainder, 60)
         self.elapsed_time_label.setText(f'{int(minutes):02}:{int(seconds):02}')
 
-        if self.section == '중반' and elapsed_seconds >= 110 and self.middle_flag == 0:
+        if self.section == '중반' and self.middle_flag == 0:
             self.middle_flag = 1
-            self.middle_time = self.elapsed_seconds
-            self.current_state_label_2.setText(f'{self.middle_time}초에 중반 구간에 돌입했습니다.')
+            self.current_state_label_2.setText(f'{int(minutes)}분{int(seconds)}초에 중반 구간에 돌입했습니다.')
 
-        if self.section == '후반' and elapsed_seconds >= 180 and self.final_flag == 0:
+        if self.section == '후반' and self.final_flag == 0:
             self.final_flag = 1
-            self.end_time = self.elapsed_seconds
-            self.current_state_label_3.setText(f'{self.end_time}초에 후반 구간에 돌입했습니다.')
+            self.end_time = int(seconds)
+            self.current_state_label_3.setText(f'{int(minutes)}분{int(seconds)}초에 후반 구간에 돌입했습니다.')
 
         
 
@@ -190,8 +191,8 @@ class AudioThread(QThread):
 
             if self.running:
                 stft = librosa.stft(audio_buffer, n_fft=2048, hop_length=512, window = 'hamming')
-                db_stft = librosa.amplitude_to_db(np.abs(stft), ref=np.max)
-                self.audio_signal.emit(db_stft)
+                print(np.mean(stft))
+                self.audio_signal.emit(stft)
 
         stream.stop_stream()
         stream.close()
