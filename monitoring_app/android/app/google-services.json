@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "536705162745",
+    "firebase_url": "https://stftmonitoring-default-rtdb.firebaseio.com",
+    "project_id": "stftmonitoring",
+    "storage_bucket": "stftmonitoring.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536705162745:android:846ac0427977f2882e3128",
+        "android_client_info": {
+          "package_name": "com.example.monitoring_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLSqsPVwuj8keUB_sAYL8tJ4Bzy_t6alU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

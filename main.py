@@ -12,12 +12,12 @@ from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from datetime import datetime
 
+import firebase_admin
+from firebase_admin import credentials,db
+
  
 from tensorflow.keras.models import load_model
-from tensorflow.keras import models
-from tensorflow.keras.losses import categorical_crossentropy
 import cv2
-import os
 
 form_class = uic.loadUiType("gui_1.ui")[0]
 
@@ -33,7 +33,7 @@ class WindowClass(QMainWindow, form_class):
         self.middle_flag = 0
         self.final_flag = 0
 
-
+        self.initFirebase()
         self.initUI()
 
 
@@ -42,6 +42,7 @@ class WindowClass(QMainWindow, form_class):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_time)
+
         self.timer.start(1000)
 
         self.start_button.clicked.connect(self.start_recording)
@@ -57,6 +58,12 @@ class WindowClass(QMainWindow, form_class):
         self.middle_time = datetime.now()
         self.end_time = datetime.now()
         self.show()
+
+    def initFirebase(self):
+        cred = credentials.Certificate("testkey.json")
+        self.name = firebase_admin.initialize_app(cred,
+        {'databaseURL' : 'https://stftmonitoring-default-rtdb.firebaseio.com/'})
+        self.root = db.reference()
 
     def update_plot(self, data):
 
@@ -84,21 +91,26 @@ class WindowClass(QMainWindow, form_class):
         self.current_time_label.setText(f'현재 시간: {current_time}')
 
 
+
     def update_elapsed_time(self):
         self.elapsed_time = datetime.now() - self.start_time
         elapsed_seconds = self.elapsed_time.total_seconds()
         hours, remainder = divmod(elapsed_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         self.elapsed_time_label.setText(f'{int(minutes):02}:{int(seconds):02}')
+        self.start_time_root.child('경과된 시간').set(f'{int(minutes):02}:{int(seconds):02}')
+        self.start_time_root.child('현 상태').set(self.section)
 
         if self.section == '중반' and self.middle_flag == 0:
             self.middle_flag = 1
             self.current_state_label_2.setText(f'{int(minutes)}분{int(seconds)}초에 중반 구간에 돌입했습니다.')
+            self.start_time_root.child('중반 시간').set(f'{int(minutes)}분{int(seconds)}')
 
         if self.section == '후반' and self.final_flag == 0:
             self.final_flag = 1
             self.end_time = int(seconds)
             self.current_state_label_3.setText(f'{int(minutes)}분{int(seconds)}초에 후반 구간에 돌입했습니다.')
+            self.start_time_root.child('후반 시간').set(f'{int(minutes)}분{int(seconds)}')
 
         
 
@@ -113,6 +125,8 @@ class WindowClass(QMainWindow, form_class):
 
         self.middle_flag = 0
         self.final_flag = 0
+
+        self.start_time_root = self.root.child(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
     def stop_recording(self):
@@ -210,12 +224,10 @@ class AudioThread(QThread):
         self.wait()
 
 
-        
-
-
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
     myWindow = WindowClass() 
     myWindow.show()
+    
     app.exec_()
